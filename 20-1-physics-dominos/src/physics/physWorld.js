@@ -10,12 +10,16 @@ const dominoParams = {
   width: 0.6,
   height: 1,
   depth: 0.2,
+  radius: 1,
 };
 
 const physicProps = {
   restitution: 0,
   friction: 0.005,
   forceStrength: 10,
+  // gravity: -9.82,
+  gravity: 0,
+  boxMass: 1,
 };
 
 const generatePhysWorld = () => {
@@ -26,11 +30,12 @@ const generatePhysWorld = () => {
   if(!world) {
     world = new CANNON.World();
   }
-  world.broadphase = new CANNON.SAPBroadphase(world);
+  // world.broadphase = new CANNON.SAPBroadphase(world);
+  world.broadphase = new CANNON.NaiveBroadphase(world);
   world.allowSleep = true;
   world.gravity.set(
       0,
-      -9.82,
+      physicProps.gravity,
       0
   );
   
@@ -73,7 +78,7 @@ const addBoxBody = (position) => {
     new CANNON.Vec3(width * 0.5, height * 0.5, depth * 0.5)
   );
   const body = new CANNON.Body({
-      mass: 1,
+      mass: physicProps.boxMass,
       position: new CANNON.Vec3(0, 3, 0),
       shape: shape,
       material: defaultMaterial
@@ -86,9 +91,26 @@ const addBoxBody = (position) => {
   return body;
 }
 
+const addSphereBody = (position) => {
+  // Sphere physics
+  const sphereShape = new CANNON.Sphere(dominoParams.radius);
+  const sphereBody = new CANNON.Body({
+      mass: 1,
+      position: new CANNON.Vec3(0, 3, 0),
+      shape: sphereShape,
+      material: defaultMaterial,
+      // type: CANNON.Body.KINEMATIC
+  });
+  sphereBody.position.copy(position);
+  world.addBody(sphereBody);
+
+  return sphereBody;
+}
+
 
 export default generatePhysWorld;
 
 export {
-  addBoxBody
+  addBoxBody,
+  addSphereBody
 };

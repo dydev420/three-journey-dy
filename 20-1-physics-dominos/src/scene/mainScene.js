@@ -6,7 +6,10 @@ const dominoParams = {
   width: 0.6,
   height: 1,
   depth: 0.2,
+  radius: 1,
 };
+
+const planeScale = 100;
 
 const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
 const boxMaterial = new THREE.MeshStandardMaterial({
@@ -17,6 +20,14 @@ const boxMaterial = new THREE.MeshStandardMaterial({
 // const boxMaterial = new THREE.MeshStandardMaterial({
 //   color: '#00FFFF'
 // });
+
+const sphereGeometry = new THREE.SphereGeometry(dominoParams.radius, 16, 16);
+const sphereMaterial = new THREE.MeshStandardMaterial({
+    // wireframe: true,
+    color: '#CC00CC',
+    metalness: 0.3,
+    roughness: 0.4,
+});
 
 let scene = null;
 
@@ -29,16 +40,14 @@ const generateScene = (canvas, sizes) => {
    * Floor
    */
   const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(10, 10),
+    new THREE.PlaneGeometry(1, 1),
     new THREE.MeshStandardMaterial({
         color: '#777777',
         metalness: 0.3,
         roughness: 0.4,
     })
-    // new THREE.MeshBasicMaterial({
-    //   color: '#808080'
-    // })
   );
+  floor.scale.set(planeScale, planeScale, planeScale);
   floor.receiveShadow = true;
   floor.rotation.x = - Math.PI * 0.5;
   scene.add(floor);
@@ -64,8 +73,9 @@ const generateScene = (canvas, sizes) => {
    * Camera
    */
   // Base camera
-  const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 100)
-  camera.position.set(- 3, 3, 3)
+  const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 1, 1000)
+  // camera.position.set(- 3, 3, 3)
+  camera.position.set(5, 50, 5)
   scene.add(camera)
   
   // Controls
@@ -99,14 +109,86 @@ const addBoxMesh = (position) => {
   mesh.position.copy(position);
   scene.add(mesh);
 
-  console.log(mesh);
+  return mesh;
+}
+
+const addSphereMesh = (position) => {
+
+  // Sphere mesh item
+  const mesh = new THREE.Mesh(
+      sphereGeometry,
+      sphereMaterial
+  );
+  // mesh.scale.set(width, height, depth);
+  mesh.castShadow = true;
+  mesh.position.copy(position);
+  scene.add(mesh);
 
   return mesh;
 }
 
+const addDebugMesh = (position) => {
+  const debugMesh = new THREE.Mesh(
+    new THREE.BoxGeometry(1, 1),
+    new THREE.MeshStandardMaterial({
+      color: {
+        r: 1- position.x,
+        g: 1- position.y,
+        b: 1- position.z,
+      }
+    })
+  );
+
+  debugMesh.position.copy(position);
+
+  scene.add(debugMesh);
+
+  return debugMesh;
+}
+
+const addReferenceMesh = () => {
+  const refGeometry = new THREE.PlaneGeometry(1, 1, 10, 10);
+  const refMaterial = new THREE.MeshStandardMaterial({
+    wireframe: true,
+    color: 'magenta'
+  });
+
+  const refMesh = new THREE.Mesh(refGeometry, refMaterial);
+  refMesh.scale.set(planeScale / 2, planeScale / 2, planeScale / 2);
+  refMesh.rotation.x = Math.PI * -0.5
+  scene.add(refMesh);
+
+  return refMesh;
+}
+
+const removeReferenceMesh = (refMesh) => {
+  scene.remove(refMesh);
+}
+
+const getMeshVertexPositions = (mesh) => {
+  const posArray = [];
+  const geo =  mesh.geometry;
+  console.log('Get vertex postions', geo);
+
+  let positions = geo.attributes["position"].array;
+    let ptCout = positions.length / 3;
+    for (let i = 0; i < ptCout; i++)
+    {
+        let p = new THREE.Vector3(positions[i * 3], positions[i * 3 + 2], positions[i * 3 + 1]);
+        posArray.push(p);
+    }
+
+    return posArray;
+};
+
 export default generateScene;
 
 export {
-  addBoxMesh
+  addBoxMesh,
+  addSphereMesh,
+  addDebugMesh,
+  addReferenceMesh,
+  removeReferenceMesh,
+  getMeshVertexPositions
 };
 

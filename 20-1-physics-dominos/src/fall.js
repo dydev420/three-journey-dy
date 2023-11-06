@@ -1,16 +1,17 @@
 import * as THREE from 'three'
 import GUI from 'lil-gui'
 import * as CANNON from 'cannon-es'
+import CannonDebugger from 'cannon-es-debugger'
 
 import generateSnowflake, { animateBody } from './patterns/snowflake';
-import generateScene, { addBoxMesh } from './scene/mainScene';
-import generatePhysWorld, { addBoxBody } from './physics/physWorld';
+import generateScene, { addBoxMesh, addDebugMesh, addReferenceMesh, addSphereMesh, getMeshVertexPositions } from './scene/mainScene';
+import generatePhysWorld, { addBoxBody, addSphereBody } from './physics/physWorld';
 
 
 
 const initialSpawnLocation = {
-  x: 0,
-  y: 0.5,
+  x: 50,
+  y: 2,
   z: 0
 }
 
@@ -20,15 +21,16 @@ const initialSpawnLocation = {
 const gui = new GUI();
 
 const debugObject = {};
-
+debugObject.maxBoxes = 100;
 debugObject.startForce = 10;
+debugObject.isGenerating = false;
 
 debugObject.createBox = () => {
-    createBox(lastSpawnPosition);
+    createSphere(lastSpawnPosition);
 }
 
 debugObject.generateSnowflake = () => {
-    createBox(generateSnowflake(lastSpawnPosition));
+  createSphere(generateSnowflake(lastSpawnPosition));
 }
 
 debugObject.reset = () => {
@@ -57,7 +59,11 @@ debugObject.start = () => {
 }
 
 debugObject.startGenerating = () => {
-  console.log('Start gen');
+  debugObject.isGenerating = true;
+}
+
+debugObject.stopGenerating = () => {
+  debugObject.isGenerating = false;
 }
 
 debugObject.enableSound = false;
@@ -66,9 +72,11 @@ debugObject.enableSound = false;
 gui.add(debugObject, 'createBox');
 gui.add(debugObject, 'generateSnowflake');
 gui.add(debugObject, 'startGenerating');
+gui.add(debugObject, 'stopGenerating');
 gui.add(debugObject, 'reset');
 gui.add(debugObject, 'start');
 gui.add(debugObject, 'startForce');
+gui.add(debugObject, 'maxBoxes');
 
 
 /**
@@ -117,6 +125,11 @@ const world = generatePhysWorld()
 // console.log(scene, camera, controls, floor, world);
 
 /**
+ * Cannon Debugger
+ */
+const cannonHelper = new CannonDebugger(scene, world);
+
+/**
  * Renderer
 */
 const renderer = new THREE.WebGLRenderer({
@@ -130,6 +143,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
 // Box Utils
 const objectsToUpdate = [];
+let activeCreatedBox = null;
 
 // Spawn logic
 const lastSpawnPosition = {
@@ -155,16 +169,63 @@ const createBox = (position) => {
   const mesh = addBoxMesh(position);
 
   // Sphere Physics Item
-  const body = addBoxBody(position)
+  const body = addBoxBody(position);
+
+  const rigidBody = {
+    isMoving: true,
+    mesh,
+    body,
+    onCollision: function () {
+      // on Cloosion
+      body.velocity.x = 0;
+      body.velocity.y = 0;
+      body.type = CANNON.Body.KINEMATIC;
+      rigidBody.isMoving = false
+    }
+  };
+
+  rigidBody.body.addEventListener('collide', rigidBody.onCollision);
 
   // Save in objects to update
-  objectsToUpdate.push({
-      mesh,
-      body
-  });
+  objectsToUpdate.push(rigidBody);
+  activeCreatedBox = rigidBody;
 
   updateLastSpawnLocation(position);
 }
+
+
+const createSphere = (position) => {
+
+  // Sphere mesh item
+  const mesh = addSphereMesh(position);
+
+  // Sphere Physics Item
+  const body = addSphereBody(position);
+
+  const rigidBody = {
+    isMoving: true,
+    mesh,
+    body,
+    onCollision: () => {
+     body.velocity.x = 0;
+     body.velocity.y = 0;
+     body.type = CANNON.Body.KINEMATIC;
+     rigidBody.isMoving = false
+    }
+  };
+
+  rigidBody.body.addEventListener('collide', rigidBody.onCollision);
+
+  // Save in objects to update
+  objectsToUpdate.push(rigidBody);
+  activeCreatedBox = rigidBody;
+
+  updateLastSpawnLocation(position);
+}
+
+/**
+ * Reference Mesh Utils
+ */
 
 /**
  * Animate
@@ -182,12 +243,11 @@ const tick = () =>
 
     // Update Physics World
     world.step(1 / 60, deltaTime, 3);
-
     
-    // Animate Objects
-    objectsToUpdate.forEach((obj) => {
-        animateBody(obj);
-    });
+    // Animate created Box
+    if(activeCreatedBox) {
+      animateBody(activeCreatedBox);
+    }
 
     // Update Physics bodies
     objectsToUpdate.forEach((obj) => {
@@ -196,9 +256,21 @@ const tick = () =>
     });
 
 
+    // Generate New Objects
+    if(debugObject.isGenerating) {
+      const canGenerate = !activeCreatedBox || !activeCreatedBox.isMoving;
+      const isWitinLimit = objectsToUpdate.length < debugObject.maxBoxes;
+
+      if(canGenerate && isWitinLimit) {
+        createSphere(generateSnowflake(lastSpawnPosition));
+      }
+    }
 
     // Update controls
     controls.update();
+
+    // Cannon Helper
+    // cannonHelper.update();
 
     // Render
     renderer.render(scene, camera)
