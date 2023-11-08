@@ -40,7 +40,7 @@ scene.add(directionalLight);
  */
 // Texture
 const textureLoader = new THREE.TextureLoader();
-const gradientTexture = textureLoader.load('textures/gradients/5.jpg');
+const gradientTexture = textureLoader.load('textures/gradients/3.jpg');
 gradientTexture.magFilter = THREE.NearestFilter;
 
 // Material
@@ -53,7 +53,7 @@ const material = new THREE.MeshToonMaterial({
 const objectsDistance = 4
 // Meshes
 const mesh1 = new THREE.Mesh(
-    new THREE.TorusGeometry(1, 0.4, 16, 60),
+    new THREE.BoxGeometry(1, 1.5, 1),
    material
 )
 const mesh2 = new THREE.Mesh(
