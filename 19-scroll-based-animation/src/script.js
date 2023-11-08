@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import GUI from 'lil-gui'
+import gsap from 'gsap'
 
 /**
  * Debug
@@ -7,13 +8,14 @@ import GUI from 'lil-gui'
 const gui = new GUI()
 
 const parameters = {
-    materialColor: '#ffeded'
+    materialColor: '#8080ff'
 }
 
 gui
     .addColor(parameters, 'materialColor')
     .onChange(() => {
         material.color.set(parameters.materialColor);
+        particlesMaterial.color.set(parameters.materialColor);
     })
 
 /**
@@ -92,9 +94,9 @@ positions.forEach((item, i) => {
 })
 
 for (let i = 0; i < particleCount; i++) {
-   positions[i * 3] = Math.random();
-   positions[i * 3 + 1] = Math.random();
-   positions[i * 3 + 2] = Math.random();
+   positions[i * 3 + 0] = (Math.random() - 0.5) * 10;
+   positions[i * 3 + 1] = objectsDistance/2 - Math.random() * objectsDistance * sectionMeshes.length;
+   positions[i * 3 + 2] = (Math.random() - 0.5) * 10;
 
 }
 
@@ -110,6 +112,11 @@ const particlesMaterial = new THREE.PointsMaterial({
     sizeAttenuation: true,
     size: 0.02
 });
+
+// Points
+const particles = new THREE.Points(particlesGeometry, particlesMaterial);
+
+scene.add(particles);
 
 /**
  * Sizes
@@ -161,9 +168,27 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
  * Scroll
  */
 let scrollY = window.scrollY;
+let currentSection = 0;
 
 window.addEventListener('scroll', () => {
     scrollY = window.scrollY;
+    const newSection = Math.round(scrollY / sizes.height);
+    
+    if(newSection !== currentSection) {
+        currentSection = newSection;
+
+        // Animation trigger
+        gsap.to(
+            sectionMeshes[currentSection]?.rotation,
+            {
+                duration: 1.5,
+                ease: 'power2.inOut',
+                x: '+=6',
+                y: '+=5',
+                z: '+=1.5'
+            }
+        );
+    }
 });
 
 /**
@@ -206,8 +231,8 @@ const tick = () =>
 
     // Animate meshes
     sectionMeshes.forEach((meshItem) => {
-        meshItem.rotation.x = elapsedTime * 0.1;
-        meshItem.rotation.y = elapsedTime * 0.08;
+        meshItem.rotation.x += deltaTime * 0.1;
+        meshItem.rotation.y += deltaTime * 0.08;
     });
 
     // Render
