@@ -2,6 +2,9 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import GUI from 'lil-gui'
 
+import snowflakeVertex from './shaders/snowflake/snowflakeVertex.glsl';
+import snowflakeFragment from './shaders/snowflake/snowflakeFragment.glsl';
+
 /**
  * Base
  */
@@ -11,10 +14,11 @@ const gui = new GUI();
 const debugObject = {
   size: 0.1,
   radius: 2.0,
+  speed: 2.5,
   isMoving: false,
-  particleCount: 50,
-  branches: 3,
-  intersectRadius: 0.1,
+  particleCount: 200,
+  branches: 12,
+  intersectRadius: 0.05,
 };
 
 debugObject.generate = () => {
@@ -153,24 +157,27 @@ const generateParticles = () => {
   for (let i = 0; i < particleCount; i++) {
     let i3 = i * 3;
 
-    const branchAngle = (i % branches) / branches * Math.PI * 2;
-
-
     // Update Animation Status
     animations[i] = 1.0;
   }
-
 
   particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   particlesGeometry.setAttribute('animation', new THREE.BufferAttribute(animations, 1));
 
   particles = new THREE.Points(
     particlesGeometry,
-    new THREE.PointsMaterial({
-      color: 'cyan',
-      size: debugObject.size,
-      sizeAttenuation: true,
-    })
+    new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      vertexColors: true,
+      vertexShader: snowflakeVertex,
+      fragmentShader: snowflakeFragment,
+      uniforms: {
+          uTime: { value: 0 },
+          uSize: { value: 30.0 * renderer.getPixelRatio() },
+      }
+  })
   );
 
   scene.add(particles);
@@ -232,13 +239,7 @@ const checkIntersect = (flakePos, testPos) => {
 // Not cheap collsion
 const detectCollision = () => {
   const {
-    radius,
-    branches,
-  } = debugObject;
-
-  const {
     activeFlakeIndex,
-    fallTime,
   } = snowState;
 
   let ai3 = activeFlakeIndex * 3; 
@@ -262,8 +263,6 @@ const detectCollision = () => {
 
       // update state if collsiion detected
       if(checkIntersect(flakePosition, testPosition)) {
-        console.log('Hit Hit');
-
         animations[activeFlakeIndex] = 0.0;
         snowState.needsFlake = true;
 
@@ -277,6 +276,7 @@ const moveSingleParticle = () => {
   const {
     radius,
     branches,
+    speed
   } = debugObject;
 
   const {
@@ -291,14 +291,17 @@ const moveSingleParticle = () => {
 
   const branchAngle = (activeFlakeIndex % branches) / branches * Math.PI * 2;
 
-  // positions[i3] = Math.cos(branchAngle) * (radius - fallTime * 0.2);
-  // positions[i3 + 1] = Math.sin(branchAngle) * (radius - fallTime * 0.2);
+  // const randomShake = (Math.random() - 0.5) * 0.1;
+  let randomShake = (Math.cos(fallTime * 50.0) - 0.5) * 0.2;
+  const newRadius = radius - fallTime * speed;
+  randomShake = randomShake *  (1 - newRadius/radius) * 3.0;
 
-  const randomShake = (Math.random() - 0.5) * 0.1;
   const finalAngle = (branchAngle + randomShake) * 1.0;
 
-  positions[i3] = Math.cos(finalAngle) * (radius - fallTime * 0.2);
-  positions[i3 + 1] = Math.sin(finalAngle) * (radius - fallTime * 0.2);
+  console.log('randomShake', randomShake);
+
+  positions[i3] = Math.cos(finalAngle) * (radius - fallTime * speed);
+  positions[i3 + 1] = Math.sin(finalAngle) * (radius - fallTime * speed);
 
   const distanceVector = new THREE.Vector3(positions[i3], positions[i3+ 1], positions[i3+2]);
 
