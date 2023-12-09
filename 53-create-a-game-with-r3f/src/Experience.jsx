@@ -12,8 +12,6 @@ export default function Experience()
 
     return <>
 
-        <OrbitControls makeDefault />
-
         <Physics debug={false}>
             <Lights />
             <Level count={blocksCount} seed={blocksSeed}/>
