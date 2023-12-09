@@ -247,13 +247,13 @@ function Bounds({
         />
 
         {/* Start Wall */}
-        <mesh
+        {/* <mesh
           receiveShadow
           position={[0, 0.75, 2]}
           scale={[4, 1.5, 0.3]}
           geometry={boxGeometry}
           material={wallMaterial}
-        />
+        /> */}
 
         {/* End Wall */}
         <mesh
@@ -289,11 +289,12 @@ export default function Level({
 
   const blocks = useMemo(() => {
     const blocks = [];
+
     for (let i = 0; i < count; i++) {
       const type = types[Math.floor(Math.random() * types.length)];
       blocks.push(type);
     }
-    console.log(blocks);
+
     return blocks;
   }, [count, types]);
 
