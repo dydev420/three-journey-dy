@@ -1,4 +1,4 @@
-import { useGLTF } from "@react-three/drei";
+import { Float, Text, useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { CuboidCollider, RigidBody } from "@react-three/rapier";
 import { useMemo, useRef, useState } from "react";
@@ -13,6 +13,21 @@ const wallMaterial = new MeshStandardMaterial({ color: 'slategrey'});
 export function BlockStart({ position = [0, 0, 0] }) {
   return(
     <group position={position}>
+      {/* Title */}
+      <Float floatIntensity={0.25} rotationIntensity={0.25}>
+        <Text
+          font="./bebas-neue-v9-latin-regular.woff"
+          scale={0.5}
+          maxWidth={0.25}
+          lineHeight={0.75}
+          textAlign="right"
+          position={[0.75, 0.65, 0]}
+          rotation-y={-0.25}
+        >
+          Rolly Race
+          <meshBasicMaterial toneMapped={false} />
+        </Text>
+      </Float>
 
       {/* Floor */}
       <mesh
@@ -22,8 +37,6 @@ export function BlockStart({ position = [0, 0, 0] }) {
         geometry={boxGeometry}
         material={floor1Material}
       />
-
-
     </group>  
   );
 }
@@ -36,6 +49,15 @@ export function BlockEnd({ position = [0, 0, 0] }) {
 
   return(
     <group position={position}>
+      {/* Finish Text */}
+      <Text
+          font="./bebas-neue-v9-latin-regular.woff"
+          scale={1}
+          position={[0, 2.2, 2]}
+        >
+          FINISH
+          <meshBasicMaterial toneMapped={false} />
+        </Text>
 
       {/* Floor */}
       <mesh
